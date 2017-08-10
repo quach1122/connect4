@@ -17,12 +17,7 @@
             width: 50px;
             height: 50px;
             display: inline-block;
-            /*background-color: #fff;*/
-            /*border-radius: 100%;*/
-            /*position: relative;*/
-            /*top: 50%;*/
-            /*transform: translateY(-50%);*/
-            /*margin: 0 10px;*/
+            position: relative;
         }
         #discDropper.hide-disc-bg span::before {
             background-color: transparent;
@@ -72,7 +67,10 @@
             height: 30px;
             display: inline-block;
             border-radius: 100%;
-            position: relative;
+            position: absolute;
+            transform: translateX(-50%);
+            left: 50%;
+
         }
         #resetBtn {
             color: #fff;
@@ -128,6 +126,7 @@
     const COLUMN = 7;
     const ROW = 6;
     const FOUR_TO_WIN = 3;
+    const DROP_POSITION = 10;
     const winnerMap = {
         p1: "Player 1",
         p2: "Player 2"
@@ -148,7 +147,7 @@
         p1: board,
         p2: board
     };
-    const dropPositions = [-24,-24,-24,-24,-24,-24]
+    const dropPositions = [10,10,10,10,10,10]
     let container = document.getElementById("container");
     for(let i = 0; i < COLUMN; i++){
         let col = document.createElement("div");
@@ -179,13 +178,10 @@
     })
     document.getElementById("discDropper").addEventListener("click", function(e) {
         const discColumn = e.target.getAttribute("data-disc-column");
-        if(!landed) {
-           return;
-        }
-        landed = false;
-        if(weHaveAWinner){
+        if(weHaveAWinner || !landed){
             return;
         }
+        landed = false;
         this.classList.remove(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
         this.classList.add(playersTurn === "p1" ? "p-two-disc" : "p-one-disc");
         var _validateWins = function () {
@@ -205,10 +201,10 @@
                         }
                     }
                     for(let c = (COLUMN-1); c >= 0; c--){
-                        if ((c - FOUR_TO_WIN) >= 0){ //vertical win
+                        if ((c - FOUR_TO_WIN) >= 0){ //horizontal win
                             let verticalWin = [];
                             for(let i = 0; i <= FOUR_TO_WIN; i++){
-                                if(board[r][c-i] && c === 6){
+                                if(board[r][c-i]){
                                     verticalWin.push(board[r][c-i]);
                                 }
                             }
@@ -217,7 +213,7 @@
                                 weHaveAWinner = true;
                             }
                         }
-                        if ((r - FOUR_TO_WIN) >= 0){ //horizontal win
+                        if ((r - FOUR_TO_WIN) >= 0){ //vertical win
                             let horizontalWin = [],
                                 diagonalWin = [];
                             for(let i = 0; i <= FOUR_TO_WIN; i++){
@@ -255,7 +251,7 @@
                     setTimeout(function () {
                         disc.style.visibility = "visible";
                         let dropDisc = setInterval(()=>{
-                            if(counter === dropPositions[j]){
+                            if(counter === DROP_POSITION){
                                 clearInterval(dropDisc);
                                 cb()
                             }
