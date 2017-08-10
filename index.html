@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            margin: 0 auto;
+        }
+        .column {
+            background-color: #ffff00;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+        }
+        .column span {
+            width: 50px;
+            height: 50px;
+            display: inline-block;
+            /*background-color: #fff;*/
+            /*border-radius: 100%;*/
+            /*position: relative;*/
+            /*top: 50%;*/
+            /*transform: translateY(-50%);*/
+            /*margin: 0 10px;*/
+        }
+        #discDropper.hide-disc-bg span::before {
+            background-color: transparent;
+        }
+        .column span::before, #discDropper span::before {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background-color: #fff;
+            border-radius: 100%;
+            content: '';
+            top: 50%;
+            transform: translateY(-50%);
+            position: relative;
+        }
+        #container {
+            display: flex;
+            justify-content: center;
+        }
+        #discDropper {
+            display: flex;
+            justify-content: center;
+            text-align: center;
+        }
+        #discDropper span {
+            width: 50px;
+            height:50px;
+            display: inline-block;
+        }
+        #discDropper:hover {
+            cursor: pointer;
+        }
+        #discDropper.p-one-disc span:hover::before {
+            background-color: red;
+        }
+        #discDropper.p-two-disc span:hover::before {
+            background-color: blue;
+        }
+        .p-one {
+            background-color: red;
+        }
+        .p-two {
+            background-color: blue;
+        }
+        .p-one, .p-two {
+            width: 30px;
+            height: 30px;
+            display: inline-block;
+            border-radius: 100%;
+            position: relative;
+        }
+        #resetBtn {
+            color: #fff;
+            background-color: #d9534f;
+            display: inline-block;
+            font-weight: 400;
+            text-align: center;
+            white-space: nowrap;
+            vertical-align: middle;
+            border: 1px solid transparent;
+            padding: .5rem 1rem;
+            font-size: 1rem;
+            border-radius: .25rem;
+            cursor: pointer;
+        }
+        #displayWinner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: rgba(0,0,0,0.3);
+            z-index: 5;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        #winner, #resetBtn {
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+<section id="displayWinner">
+    <h1 id="winner"></h1>
+    <button id="resetBtn">Reset</button>
+</section>
+<section>
+    <div id="discDropper">
+        <span data-disc-column="0"></span>
+        <span data-disc-column="1"></span>
+        <span data-disc-column="2"></span>
+        <span data-disc-column="3"></span>
+        <span data-disc-column="4"></span>
+        <span data-disc-column="5"></span>
+        <span data-disc-column="6"></span>
+    </div>
+    <section id="container">
+    </section>
+</section>
+<script>
+    const COLUMN = 7;
+    const ROW = 6;
+    const FOUR_TO_WIN = 3;
+    const winnerMap = {
+        p1: "Player 1",
+        p2: "Player 2"
+    }
+    let weHaveAWinner = false;
+    const createBoard = [
+        [0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0],
+        [0,0,0,0,0,0,0]
+    ];
+    let board = JSON.parse(JSON.stringify(createBoard));
+    let playersTurn = "p1";
+    let players = {
+        p1: board,
+        p2: board
+    };
+    const dropPositions = [-24,-24,-24,-24,-24,-24]
+    let container = document.getElementById("container");
+    for(let i = 0; i < COLUMN; i++){
+        let col = document.createElement("div");
+            for(let j = 0; j < ROW; j++){
+            let row = document.createElement("span");
+                col.classList.add("column");
+                col.appendChild(row);
+        }
+        container.appendChild(col);
+    }
+    console.log(board)
+    document.getElementById("discDropper").addEventListener("mouseenter", e => {
+        e.currentTarget.classList.add(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
+
+    });
+    document.getElementById("resetBtn").addEventListener("click", e => {
+        playersTurn = "p1";
+        board = JSON.parse(JSON.stringify(createBoard));
+        document.getElementById("discDropper").classList.remove("hide-disc-bg");
+        document.getElementById("displayWinner").style.display = "none";
+        [...document.getElementsByClassName("column")].forEach(d => {
+            [...d.childNodes].forEach(c => {
+                if(c.hasChildNodes()){ //check if there are discs in the board
+                    c.childNodes[0].remove();
+                }
+            })
+        });
+        console.log(board)
+        weHaveAWinner = false;
+    })
+    document.getElementById("discDropper").addEventListener("click", e => {
+        const discColumn = e.target.getAttribute("data-disc-column");
+        let landed = false;
+        if(weHaveAWinner){
+            return;
+        }
+        var _validateWins = function () {
+            console.log('abd')
+                for(let r = (ROW-1); r >= 0; r--) {
+                    for(let c = 0; c < COLUMN; c++) {
+                        let diagonalWin = [];
+                        if ((c + FOUR_TO_WIN <= COLUMN) && (r - FOUR_TO_WIN >= 0)) { //diagonal starting bottom left
+                            for (let i = 0; i <= FOUR_TO_WIN; i++) {
+
+                                if (board[r-i][c+i]) {
+                                    diagonalWin.push(board[r-i][c+i]);
+                                }
+                            }
+                            if (diagonalWin.every(d => d === playersTurn) && ((diagonalWin.length - 1) === FOUR_TO_WIN)) {
+                                console.log('diagnalwin andy', playersTurn);
+                                weHaveAWinner = true;
+                            }
+                        }
+                    }
+                    for(let c = (COLUMN-1); c >= 0; c--){
+                        if ((c - FOUR_TO_WIN) >= 0){ //vertical win
+                            let verticalWin = [];
+                            for(let i = 0; i <= FOUR_TO_WIN; i++){
+                                if(board[r][c-i] && c === 6){
+                                    verticalWin.push(board[r][c-i]);
+                                    console.log(verticalWin, playersTurn,(verticalWin.length -1) );
+
+                                }
+//                        if(board[r+i][c+i] && (r - FOUR_TO_WIN >= 0)){
+//                            console.log(r+i,' ',c+i)
+//                            diagonalWin.push(board[r+i][c+i]);
+//                        }
+
+                            }
+//                            console.log(board[r][c-i]);
+
+                            if(verticalWin.every(d => d === playersTurn) && ((verticalWin.length -1) === FOUR_TO_WIN)){
+                                console.log(board);
+                                weHaveAWinner = true;
+                            }
+//                    if(diagonalWin.every(d => d === playersTurn) && ((diagonalWin.length -1) === FOUR_TO_WIN)){
+//                        console.log('diagnalwin andy',playersTurn);
+//                        weHaveAWinner = true;
+//                    }
+                        }
+                        if ((r - FOUR_TO_WIN) >= 0){ //horizontal win
+                            let horizontalWin = [],
+                                diagonalWin = [];
+                            for(let i = 0; i <= FOUR_TO_WIN; i++){
+                                if(board[r-i][c]){
+                                    horizontalWin.push(board[r-i][c]);
+                                }
+                                if(board[r-i][c-i] && (c - FOUR_TO_WIN >= 0)){ //diagonal check bottom right
+
+                                    diagonalWin.push(board[r-i][c-i]);
+                                }
+
+                            }
+                            if(horizontalWin.every(d => d === playersTurn) && ((horizontalWin.length -1) === FOUR_TO_WIN)){
+                                weHaveAWinner = true;
+                            }
+                            if(diagonalWin.every(d => d === playersTurn) && ((diagonalWin.length -1) === FOUR_TO_WIN)){
+                                console.log('diagnalwin',playersTurn);
+                                weHaveAWinner = true;
+                            }
+                        }
+                    }
+                }
+        }
+
+        for(let j = (ROW-1); j >= 0; j--){
+            if(!board[j][discColumn]){
+                board[j][discColumn] = playersTurn;
+                let dom = document.getElementById.bind(document);
+                let counter = -(dom("container").clientHeight + dom("discDropper").clientHeight);
+                console.log(counter);
+
+                let disc = document.createElement("label");
+                disc.classList.add((playersTurn === "p1") ? "p-one" : "p-two");
+                disc.style.top = counter;
+                disc.style.visibility = "hidden";
+                document.getElementsByClassName("column")[discColumn].children[j].appendChild(disc);
+                setTimeout(function () {
+                    disc.style.visibility = "visible";
+                    let dropDisc = setInterval(()=>{
+                        if(counter === dropPositions[j]){
+                            clearInterval(dropDisc);
+                            landed = true;
+                        }
+                        disc.style.top = counter++ + "px";
+
+                    },1);
+                });
+
+                break;
+            }
+        }
+        _validateWins();
+        if(weHaveAWinner){
+            document.getElementById("displayWinner").style.display = "flex";
+            document.getElementById("winner").innerHTML = "The winner is " + winnerMap[playersTurn];
+            document.getElementById("discDropper").classList.add("hide-disc-bg");
+        }
+        e.currentTarget.classList.remove(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
+        playersTurn = (playersTurn === "p1") ? "p2" : "p1";
+        e.currentTarget.classList.add(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
+    });
+</script>
+</body>
+</html>
