@@ -87,6 +87,7 @@
             font-size: 1rem;
             border-radius: .25rem;
             cursor: pointer;
+            margin-left: 50px;
         }
         #displayWinner {
             position: fixed;
@@ -132,6 +133,7 @@
         p2: "Player 2"
     }
     let weHaveAWinner = false;
+    let landed = true;
     const createBoard = [
         [0,0,0,0,0,0,0],
         [0,0,0,0,0,0,0],
@@ -157,7 +159,6 @@
         }
         container.appendChild(col);
     }
-    console.log(board)
     document.getElementById("discDropper").addEventListener("mouseenter", e => {
         e.currentTarget.classList.add(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
 
@@ -174,17 +175,20 @@
                 }
             })
         });
-        console.log(board)
         weHaveAWinner = false;
     })
-    document.getElementById("discDropper").addEventListener("click", e => {
+    document.getElementById("discDropper").addEventListener("click", function(e) {
         const discColumn = e.target.getAttribute("data-disc-column");
-        let landed = false;
+        if(!landed) {
+           return;
+        }
+        landed = false;
         if(weHaveAWinner){
             return;
         }
+        this.classList.remove(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
+        this.classList.add(playersTurn === "p1" ? "p-two-disc" : "p-one-disc");
         var _validateWins = function () {
-            console.log('abd')
                 for(let r = (ROW-1); r >= 0; r--) {
                     for(let c = 0; c < COLUMN; c++) {
                         let diagonalWin = [];
@@ -196,7 +200,6 @@
                                 }
                             }
                             if (diagonalWin.every(d => d === playersTurn) && ((diagonalWin.length - 1) === FOUR_TO_WIN)) {
-                                console.log('diagnalwin andy', playersTurn);
                                 weHaveAWinner = true;
                             }
                         }
@@ -207,25 +210,12 @@
                             for(let i = 0; i <= FOUR_TO_WIN; i++){
                                 if(board[r][c-i] && c === 6){
                                     verticalWin.push(board[r][c-i]);
-                                    console.log(verticalWin, playersTurn,(verticalWin.length -1) );
-
                                 }
-//                        if(board[r+i][c+i] && (r - FOUR_TO_WIN >= 0)){
-//                            console.log(r+i,' ',c+i)
-//                            diagonalWin.push(board[r+i][c+i]);
-//                        }
-
                             }
-//                            console.log(board[r][c-i]);
 
                             if(verticalWin.every(d => d === playersTurn) && ((verticalWin.length -1) === FOUR_TO_WIN)){
-                                console.log(board);
                                 weHaveAWinner = true;
                             }
-//                    if(diagonalWin.every(d => d === playersTurn) && ((diagonalWin.length -1) === FOUR_TO_WIN)){
-//                        console.log('diagnalwin andy',playersTurn);
-//                        weHaveAWinner = true;
-//                    }
                         }
                         if ((r - FOUR_TO_WIN) >= 0){ //horizontal win
                             let horizontalWin = [],
@@ -244,50 +234,50 @@
                                 weHaveAWinner = true;
                             }
                             if(diagonalWin.every(d => d === playersTurn) && ((diagonalWin.length -1) === FOUR_TO_WIN)){
-                                console.log('diagnalwin',playersTurn);
                                 weHaveAWinner = true;
                             }
                         }
                     }
                 }
         }
+        var _dropDisc = function (cb) {
+            for(let j = (ROW-1); j >= 0; j--){
+                if(!board[j][discColumn]){
+                    board[j][discColumn] = playersTurn;
+                    let dom = document.getElementById.bind(document);
+                    let counter = -(dom("container").clientHeight + dom("discDropper").clientHeight);
 
-        for(let j = (ROW-1); j >= 0; j--){
-            if(!board[j][discColumn]){
-                board[j][discColumn] = playersTurn;
-                let dom = document.getElementById.bind(document);
-                let counter = -(dom("container").clientHeight + dom("discDropper").clientHeight);
-                console.log(counter);
+                    let disc = document.createElement("label");
+                    disc.classList.add((playersTurn === "p1") ? "p-one" : "p-two");
+                    disc.style.top = counter;
+                    disc.style.visibility = "hidden";
+                    document.getElementsByClassName("column")[discColumn].children[j].appendChild(disc);
+                    setTimeout(function () {
+                        disc.style.visibility = "visible";
+                        let dropDisc = setInterval(()=>{
+                            if(counter === dropPositions[j]){
+                                clearInterval(dropDisc);
+                                cb()
+                            }
+                            disc.style.top = counter++ + "px";
 
-                let disc = document.createElement("label");
-                disc.classList.add((playersTurn === "p1") ? "p-one" : "p-two");
-                disc.style.top = counter;
-                disc.style.visibility = "hidden";
-                document.getElementsByClassName("column")[discColumn].children[j].appendChild(disc);
-                setTimeout(function () {
-                    disc.style.visibility = "visible";
-                    let dropDisc = setInterval(()=>{
-                        if(counter === dropPositions[j]){
-                            clearInterval(dropDisc);
-                            landed = true;
-                        }
-                        disc.style.top = counter++ + "px";
+                        },1);
+                    },0);
 
-                    },1);
-                });
-
-                break;
+                    break;
+                }
             }
-        }
-        _validateWins();
-        if(weHaveAWinner){
-            document.getElementById("displayWinner").style.display = "flex";
-            document.getElementById("winner").innerHTML = "The winner is " + winnerMap[playersTurn];
-            document.getElementById("discDropper").classList.add("hide-disc-bg");
-        }
-        e.currentTarget.classList.remove(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
-        playersTurn = (playersTurn === "p1") ? "p2" : "p1";
-        e.currentTarget.classList.add(playersTurn === "p1" ? "p-one-disc" : "p-two-disc");
+        };
+        _dropDisc(() => {
+            _validateWins();
+            if(weHaveAWinner){
+                document.getElementById("displayWinner").style.display = "flex";
+                document.getElementById("winner").innerHTML = "The winner is " + winnerMap[playersTurn];
+                document.getElementById("discDropper").classList.add("hide-disc-bg");
+            }
+            playersTurn = (playersTurn === "p1") ? "p2" : "p1";
+            landed = true;
+        });
     });
 </script>
 </body>
